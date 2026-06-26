@@ -20,17 +20,22 @@ def review_code(state: AgentState) -> ReviewerOutput:
     print("[*] Reviewer Agent: Evaluating execution logs...")
     
     system_prompt = (
-        "You are a strict Senior Quality Assurance Engineer. \n"
-        "You will review a Python script and its terminal output (stdout/stderr).\n"
-        "If there are any errors or the output does not satisfy the original task, reject it and provide actionable feedback.\n"
+        "You are an elite Quality Assurance AI. Your job is to verify if the execution output matches the expected result of the task.\n"
+        "CRITICAL RULE 1: If the Execution History contains a 'Human Intervention', those human instructions completely OVERRIDE the original task requirements. You must evaluate the code based on the human's new rules.\n"
+        "CRITICAL RULE 2: If the TERMINAL EXECUTION LOGS contain a 'CRASH LOG', a traceback, or any errors, you MUST reject the code (is_approved = False). NEVER approve code that crashes.\n"
         "Respond ONLY with the required JSON structure."
     )
     
-    user_context = (
-        f"Original Task: {state.task}\n\n"
-        f"Generated Code:\n{state.current_code}\n\n"
-        f"Terminal Execution Output:\n{state.execution_output}"
-    )
+    user_context = f"Original Task: {state.task}\n\n"
+    
+    # LONG-TERM MEMORY: Injects the history so the Reviewer sees human hints
+    if state.history:
+        user_context += "--- EXECUTION HISTORY & HUMAN OVERRIDES ---\n"
+        for i, entry in enumerate(state.history):
+            user_context += f"Step {i + 1}: {entry}\n"
+            
+    user_context += f"\n--- CODE TO REVIEW ---\n{state.current_code}\n\n"
+    user_context += f"--- TERMINAL EXECUTION LOGS ---\n{state.execution_output}\n"
     
     try:
         response = ollama.chat(
@@ -53,7 +58,7 @@ def review_code(state: AgentState) -> ReviewerOutput:
         )
 
 if __name__ == "__main__":
-    # Test the Reviewer Agent
+    # Testing the Reviewer Agent
     dummy_state = AgentState(
         task="Write a script that prints 'Hello World'",
         current_code="prnt('Hello World')", # Intentional typo
