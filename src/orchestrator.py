@@ -1,109 +1,86 @@
 import time
+from rich.console import Console
+from rich.panel import Panel
+from rich.prompt import Prompt
+from rich.text import Text
+
 from state import AgentState
 from agent_coder import generate_code
 from agent_reviewer import review_code
 from executor import execute_code
 
+console = Console()
+
 def run_orchestrator(task_prompt: str) -> AgentState:
-    """
-    The Master Finite State Machine loop. 
-    Routes the AgentState through the network of AI agents and the Docker sandbox.
-    """
-    print("=" * 60)
-    print("INITIALIZING MULTI-AGENT ORCHESTRATOR")
-    print("=" * 60)
+    console.clear()
+    console.print(Panel.fit("[bold cyan] INITIALIZING MULTI-AGENT ORCHESTRATOR[/bold cyan]", border_style="cyan"))
     
-    # Initialize the single source of truth
     state = AgentState(task=task_prompt, status="planning")
     
-    # The Infinite Loop (protected by iteration limits later)
-    while state.status not in ["completed", "failed"]:
+    # We wrap the main loop in a dynamic loading spinner
+    with console.status("[bold green]System initializing...[/bold green]", spinner="dots4") as status_ui:
         
-        print(f"\n[🔄 CURRENT STATE: {state.status.upper()} | Iteration: {state.iteration_count}]")
-        
-        if state.status == "planning":
-            print("[*] Planning phase complete. Transitioning to Coder...")
-            state.history.append("System initialized task.")
-            state.status = "coding"
+        while state.status not in ["completed", "failed"]:
             
-        elif state.status == "coding":
-            # Pass state to Coder
-            coder_output = generate_code(state)
+            status_ui.update(f"[bold magenta]🔄 STATE: {state.status.upper()} | Iteration: {state.iteration_count}[/bold magenta]")
+            time.sleep(1) # Brief pause for visual pacing
             
-            # Update state with new code
-            state.current_code = coder_output.code_snippet
-            state.history.append(f"Coder thought: {coder_output.thought_process}")
-            
-            print("[*] Code generated. Transitioning to Sandbox Executor...")
-            state.status = "executing"
-            
-        elif state.status == "executing":
-            # Pass state to Docker Sandbox
-            state = execute_code(state)
-            
-            print("[*] Execution complete. Transitioning to Reviewer...")
-            state.status = "reviewing"
-            
-        elif state.status == "reviewing":
-            # Pass state to Reviewer
-            reviewer_output = review_code(state)
-            
-            if reviewer_output.is_approved:
-                print(f"[✅] Reviewer APPROVED the code!")
-                state.history.append("Reviewer approved final execution.")
-                state.status = "completed"
-            else:
-                print(f"[❌] Reviewer REJECTED the code. Feedback: {reviewer_output.feedback}")
-                state.reviewer_feedback = reviewer_output.feedback
-                state.history.append(f"Reviewer rejected. Reason: {reviewer_output.feedback}")
-                
-                # Increment the loop counter and send it back to the coder!
-                state.iteration_count += 1
-                # THE CIRCUIT BREAKER
-                if state.iteration_count >= 2:
-                    print("\n[!] MAXIMUM ITERATIONS REACHED. Agents are stuck.")
-                    state.status = "hitl"
-                else:
-                    state.status = "coding"
-        
-        #HUMAN-IN-THE-LOOP (HITL) NODE
-        elif state.status == "hitl":
-            print("\n" + "=" * 60)
-            print(" HUMAN INTERVENTION REQUIRED ")
-            print("The agents have failed 5 times in a row. They need your expertise.")
-            print(f"Latest Reviewer Feedback: {state.reviewer_feedback}")
-            print("=" * 60)
-            
-            human_hint = input("\n[?] Enter a hint for the Coder (or type 'exit' to abort): ").strip()
-            
-            if human_hint.lower() == 'exit':
-                print("[*] Aborting workflow by human command.")
-                state.status = "failed"
-            else:
-                # Inject the human hint into the system memory
-                state.reviewer_feedback = f"HUMAN OVERRIDE HINT: {human_hint} (Previous error: {state.reviewer_feedback})"
-                state.history.append(f"Human Intervention: {human_hint}")
-                
-                # Reset the counter and send them back to work!
-                state.iteration_count = 0 
+            if state.status == "planning":
+                state.history.append("System initialized task.")
                 state.status = "coding"
-                print("\n[*] Hint injected into shared memory. Resuming autonomous loop...")          
-        
-        # Small delay just so we can read the terminal output
-        time.sleep(1)
+                
+            elif state.status == "coding":
+                status_ui.update(f"[bold yellow]⚙️  Coder Agent is writing logic... (Iteration {state.iteration_count})[/bold yellow]")
+                coder_output = generate_code(state)
+                state.current_code = coder_output.code_snippet
+                state.history.append(f"Coder thought: {coder_output.thought_process}")
+                state.status = "executing"
+                
+            elif state.status == "executing":
+                status_ui.update("[bold blue]⚡ Spinning up Zero-Trust Docker Sandbox...[/bold blue]")
+                state = execute_code(state)
+                state.status = "reviewing"
+                
+            elif state.status == "reviewing":
+                status_ui.update("[bold red]🔍 Reviewer Agent is analyzing execution logs...[/bold red]")
+                reviewer_output = review_code(state)
+                
+                if reviewer_output.is_approved:
+                    console.print("[bold green]✅ Reviewer APPROVED the code![/bold green]")
+                    state.history.append("Reviewer approved final execution.")
+                    state.status = "completed"
+                else:
+                    console.print(f"[bold red]❌ Reviewer REJECTED the code.[/bold red] [dim]Reason: {reviewer_output.feedback}[/dim]")
+                    state.reviewer_feedback = reviewer_output.feedback
+                    state.history.append(f"Reviewer rejected. Reason: {reviewer_output.feedback}")
+                    state.iteration_count += 1
+                    
+                    if state.iteration_count >= 2:
+                        console.print("[bold red blink]⚠️ MAXIMUM ITERATIONS REACHED.[/bold red blink]")
+                        state.status = "hitl"
+                    else:
+                        state.status = "coding"
+                        
+            elif state.status == "hitl":
+                # Pause the spinner to ask the human
+                status_ui.stop() 
+                
+                console.print("\n")
+                console.print(Panel("[bold red]🚨 HUMAN INTERVENTION REQUIRED 🚨[/bold red]\nThe agents are stuck in a loop. They need your architectural guidance.", border_style="red"))
+                console.print(f"[yellow]Reviewer Feedback:[/yellow] {state.reviewer_feedback}")
+                
+                human_hint = Prompt.ask("\n[bold cyan][?] Enter a hint for the Coder (or type 'exit')[/bold cyan]")
+                
+                if human_hint.lower() == 'exit':
+                    state.status = "failed"
+                else:
+                    state.reviewer_feedback = f"HUMAN OVERRIDE HINT: {human_hint} (Previous error: {state.reviewer_feedback})"
+                    state.history.append(f"Human Intervention: {human_hint}")
+                    state.iteration_count = 0 
+                    state.status = "coding"
+                    console.print("[bold green][*] Hint injected into memory. Resuming autonomous loop...[/bold green]")
+                    
+                # Restart the spinner
+                status_ui.start() 
 
-    print("\n" + "=" * 60)
-    if state.status == "completed":
-        print("🎉 WORKFLOW COMPLETE 🎉")
-        print("\n--- FINAL CODE ---")
-        print(state.current_code)
-    else:
-        print("⚠️ WORKFLOW FAILED OR ABORTED ⚠️")
-    print("=" * 60)
-    
     return state
-
-if __name__ == "__main__":
-    # This will fail because 'pandas' is not installed in the basic python:3.11-alpine Docker container!
-    test_task = "Write a script that imports pandas, creates a basic dataframe, and prints it."
-    final_state = run_orchestrator(test_task)
