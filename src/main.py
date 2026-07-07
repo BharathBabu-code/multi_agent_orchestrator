@@ -26,14 +26,14 @@ def main():
     
     console.print("\n")
     if final_state.status == "completed":
-        console.print(Panel("[bold green]🎉 WORKFLOW COMPLETE 🎉[/bold green]", border_style="green"))
+        console.print(Panel("[bold green]! WORKFLOW COMPLETE ![/bold green]", border_style="green"))
         
         # Display the code with Python syntax highlighting
         syntax = Syntax(final_state.current_code, "python", theme="monokai", line_numbers=True)
         console.print(Panel(syntax, title="[bold cyan]Final Generated Script[/bold cyan]", border_style="cyan"))
         
     else:
-        console.print(Panel("[bold red]⚠️ WORKFLOW ABORTED OR FAILED[/bold red]", border_style="red"))
+        console.print(Panel("[bold red] !!WORKFLOW ABORTED OR FAILED!![/bold red]", border_style="red"))
         
     console.print("\n[dim]Shutting down system...[/dim]")
 

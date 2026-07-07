@@ -23,8 +23,9 @@ def generate_code(state: AgentState) -> CoderOutput:
     #System instruction
     system_prompt = (
         "You are an elite Python backend developer. Your job is to write clean, secure, and executable code.\n"
-        "You will be provided with a task, a history of past attempts, and the latest feedback.\n"
-        "Pay close attention to the Execution History to avoid repeating mistakes or ignoring human hints.\n"
+        "You will be provided with a task, and potentially feedback from a previous failed run.\n"
+        "CRITICAL PYTHON RULE: You MUST preserve all Python indentation in your code_snippet. "
+        "Use exactly 4 literal spaces for each indentation level. If you strip leading whitespaces, the system will crash.\n"
         "Respond ONLY with the required JSON structure."
     )
     

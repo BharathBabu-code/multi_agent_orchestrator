@@ -2,7 +2,7 @@
 
 An enterprise-grade, state-driven multi-agent execution framework built in Python. This orchestrator utilizes an explicit Finite State Machine (FSM) to coordinate autonomous AI agents through iterative software engineering tasks, featuring runtime code execution inside an isolated, zero-trust container environment and an automated peer-review loop with human intervention fallback.
 
-## 🏗️ Architecture Overview
+##  Architecture Overview
 
 The system is designed around a single source of truth (`AgentState`) passed deterministically between specialized nodes. Rather than relying on fragile, completely autonomous LLM loops, this framework enforces strict boundaries using an engineered pipeline:
 
@@ -17,14 +17,14 @@ The system is designed around a single source of truth (`AgentState`) passed det
 4. **Reviewer Agent:** Inspects stderr/stdout compilation logs and exit codes. Automatically approves code or provides structural feedback back to the Coder.
 5. **Human-in-the-Loop (HITL):** A built-in circuit breaker that triggers after sequential failures, allowing an engineer to inject hints directly into shared system memory to break autonomous loops.
 
-## ✨ Features
+##  Features
 
 * **Deterministic State Machine:** Built around a formal `AgentState` paradigm preventing state drift or out-of-order execution.
 * **Zero-Trust Ephemeral Sandbox:** Code execution occurs safely inside isolated Docker containers (`python:3.11-alpine`), protecting the host system from malicious or runaway logic.
 * **Dynamic Terminal UI:** Powered by `Rich`, providing live status updating via multi-state loaders, clean visual panels, and real-time color-coded feedback.
 * **Syntax Highlighted Outputs:** Final verified scripts are rendered using native terminal syntax highlighting (`Monokai` theme) with structural line numbering.
 
-## 📂 Project Structure
+##  Project Structure
 
 ```text
 src/
@@ -35,7 +35,7 @@ src/
 ├── orchestrator.py    # Master FSM execution loop and workflow coordination
 └── main.py            # User-facing CLI entry point and interface layers
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 

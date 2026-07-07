@@ -19,7 +19,7 @@ def run_orchestrator(task_prompt: str) -> AgentState:
     # The Infinite Loop (protected by iteration limits later)
     while state.status not in ["completed", "failed"]:
         
-        print(f"\n[🔄 CURRENT STATE: {state.status.upper()} | Iteration: {state.iteration_count}]")
+        print(f"\n[-> CURRENT STATE: {state.status.upper()} | Iteration: {state.iteration_count}]")
         
         if state.status == "planning":
             print("[*] Planning phase complete. Transitioning to Coder...")
@@ -49,11 +49,11 @@ def run_orchestrator(task_prompt: str) -> AgentState:
             reviewer_output = review_code(state)
             
             if reviewer_output.is_approved:
-                print(f"[✅] Reviewer APPROVED the code!")
+                print(f"Reviewer APPROVED the code!")
                 state.history.append("Reviewer approved final execution.")
                 state.status = "completed"
             else:
-                print(f"[❌] Reviewer REJECTED the code. Feedback: {reviewer_output.feedback}")
+                print(f"Reviewer REJECTED the code. Feedback: {reviewer_output.feedback}")
                 state.reviewer_feedback = reviewer_output.feedback
                 state.history.append(f"Reviewer rejected. Reason: {reviewer_output.feedback}")
                 
@@ -94,11 +94,11 @@ def run_orchestrator(task_prompt: str) -> AgentState:
 
     print("\n" + "=" * 60)
     if state.status == "completed":
-        print("🎉 WORKFLOW COMPLETE 🎉")
+        print("! WORKFLOW COMPLETE !")
         print("\n--- FINAL CODE ---")
         print(state.current_code)
     else:
-        print("⚠️ WORKFLOW FAILED OR ABORTED ⚠️")
+        print(" !! WORKFLOW ABORTED OR FAILED !!")
     print("=" * 60)
     
     return state

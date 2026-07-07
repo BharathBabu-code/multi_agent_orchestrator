@@ -21,7 +21,7 @@ def execute_code(state: AgentState) -> AgentState:
     image = "python:3.11-alpine"
     
     # We must properly escape the code so it can be passed as a single string command to the container
-    safe_code = textwrap.dedent(state.current_code)
+    safe_code = state.current_code
     
     try:
         #Imp Notes:
