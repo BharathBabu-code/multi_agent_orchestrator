@@ -55,7 +55,7 @@ def run_orchestrator(task_prompt: str) -> AgentState:
                     state.history.append(f"Reviewer rejected. Reason: {reviewer_output.feedback}")
                     state.iteration_count += 1
                     
-                    if state.iteration_count >= 1:
+                    if state.iteration_count >= 3:
                         console.print("[bold red blink]!! MAXIMUM ITERATIONS REACHED !![/bold red blink]")
                         state.status = "hitl"
                     else:
