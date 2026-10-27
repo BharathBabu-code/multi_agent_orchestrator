@@ -17,18 +17,12 @@ def execute_code(state: AgentState) -> AgentState:
         state.execution_output = "SYSTEM_ERROR: Docker daemon is not running."
         return state
 
-    # We use a highly stripped down version of Linux (Alpine) for maximum speed and security
     image = "python:3.11-alpine"
     
-    # We must properly escape the code so it can be passed as a single string command to the container
     safe_code = state.current_code
     
     try:
-        #Imp Notes:
-        # Run the container
-        # - remove=True means the container deletes itself the millisecond it finishes
-        # - mem_limit restricts the AI from crashing our RAM
-        # - network_disabled=True means the AI cannot access the internet to download malware
+       
         print("    -> Running code inside isolated alpine container...")
         
         container_output = client.containers.run(
@@ -49,9 +43,7 @@ def execute_code(state: AgentState) -> AgentState:
         print("    -> Execution complete. Output captured.")
         
     except docker.errors.ContainerError as e:
-        #Imp notes
-        # If the python code crashes (SyntaxError, TypeError, etc.), it throws a ContainerError.
-        # We capture the stderr traceback here to feed back to the Reviewer.
+        
         print("    -> [!] Code crashed during execution.")
         error_logs = e.stderr.decode('utf-8').strip() if e.stderr else str(e)
         state.execution_output = f"CRASH LOG:\n{error_logs}"
